@@ -1,7 +1,8 @@
 'use strict';
 
 const i2c = require('i2c-bus'),
-      EventEmitter = require('events');
+      EventEmitter = require('events'),
+      Gpio = require('onoff').Gpio;
 
 const MPR121_I2CADDR_DEFAULT = 0x5A,
       MPR121_TOUCHSTATUS_L   = 0x00,
@@ -55,6 +56,7 @@ class MPR121 extends EventEmitter {
     this.device = false;
     this.ready = false;
     this.timer = false;
+    this.interruptPin = false;
 
     this.init()
         .then(this.reset.bind(this))
@@ -147,6 +149,36 @@ class MPR121 extends EventEmitter {
 
     clearInterval(this.timer);
     this.timer = false;
+
+  }
+
+  startInterrupts(pin) {
+
+      if(! this.ready) return this.on('ready', this.startInterrupt);
+
+      if(this.interruptPin) {
+        console.error(`startInterrupts(${pin}): interrupts are set up already`);
+        return;
+      }
+
+      this.interruptPin = new Gpio(pin, 'in', 'falling');
+      button.watch(this.interruptCallback.bind(this));
+
+  }
+
+  stopInterrupts() {
+
+    if(! this.interruptPin) return;
+
+    this.interruptPin.unwatch(this.interruptCallback.bind(this));
+    this.interruptPin.unexport();
+    this.interruptPin = false;
+
+  }
+
+  interruptCallback(err, value) {
+
+    this.touched().then(this.updateState.bind(this));
 
   }
 
