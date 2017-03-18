@@ -154,7 +154,7 @@ class MPR121 extends EventEmitter {
 
   startInterrupts(pin) {
 
-      if(! this.ready) return this.on('ready', this.startInterrupt);
+      if(! this.ready) return this.on('ready', () => this.startInterrupts(pin));
 
       if(this.interruptPin) {
         console.error(`startInterrupts(${pin}): interrupts are set up already`);
@@ -162,7 +162,7 @@ class MPR121 extends EventEmitter {
       }
 
       this.interruptPin = new Gpio(pin, 'in', 'falling');
-      button.watch(this.interruptCallback.bind(this));
+      this.interruptPin.watch(this.interruptCallback.bind(this));
 
   }
 
